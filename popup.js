@@ -44,7 +44,7 @@ function showPopup() {
             color: #000;
             font-weight: 400;
             padding: 20px;
-            text-align: center;
+            text-align: left;
             line-height: 1.4;
         }
         .button-container {
