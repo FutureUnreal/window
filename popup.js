@@ -7,7 +7,7 @@ function showPopup() {
             to { opacity: 1; }
         }
         @keyframes slideIn {
-            from { transform: translateY(-50px); opacity: 0; }
+            from { transform: translateY(-20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
         #popup-overlay {
@@ -16,38 +16,26 @@ function showPopup() {
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
+            background-color: rgba(0, 0, 0, 0.3);
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
+            padding-top: 20px;
             z-index: 9999;
             animation: fadeIn 0.3s ease-out;
         }
         #popup-box {
-            background-color: #fff;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 
-                0 10px 25px rgba(0,0,0,0.2),
-                0 0 0 3px rgba(130, 46, 251, 0.3),
-                0 0 20px 10px rgba(130, 46, 251, 0.2);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.18);
             text-align: center;
             width: 90%;
             max-width: 300px;
             animation: slideIn 0.3s ease-out;
-            position: relative;
-        }
-        #popup-box::before {
-            content: '';
-            position: absolute;
-            top: -5px;
-            left: -5px;
-            right: -5px;
-            bottom: -5px;
-            background: rgba(130, 46, 251, 0.1);
-            border-radius: 15px;
-            z-index: -1;
-            filter: blur(10px);
         }
         #popup-content {
             font-size: 16px;
@@ -60,7 +48,7 @@ function showPopup() {
             color: #fff;
             background-color: #822efb;
             border: none;
-            border-radius: 5px;
+            border-radius: 20px;
             cursor: pointer;
             transition: background-color 0.3s, transform 0.1s;
         }
@@ -96,7 +84,7 @@ function showPopup() {
 
     const content = document.createElement('p');
     content.id = 'popup-content';
-    content.textContent = '这是一个响应式的紫色边框弹窗！';
+    content.textContent = '这是一个苹果风格的半透明弹窗！';
 
     const closeButton = document.createElement('button');
     closeButton.id = 'close-button';
