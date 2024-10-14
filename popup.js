@@ -6,6 +6,10 @@ function showPopup() {
             from { opacity: 0; }
             to { opacity: 1; }
         }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
         @keyframes slideIn {
             from { transform: translateY(-20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
@@ -29,18 +33,19 @@ function showPopup() {
             -webkit-backdrop-filter: blur(10px);
             border-radius: 14px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            width: 270px;
+            width: 300px;
             animation: slideIn 0.3s ease-out;
             overflow: hidden;
             display: flex;
             flex-direction: column;
         }
         #popup-content {
-            font-size: 13px;
+            font-size: 16px;
             color: #000;
             font-weight: 400;
             padding: 20px;
             text-align: center;
+            line-height: 1.4;
         }
         .button-container {
             display: flex;
@@ -84,7 +89,7 @@ function showPopup() {
 
     const content = document.createElement('p');
     content.id = 'popup-content';
-    content.textContent = '允许"UC"在您使用该应用时访问您的位置吗？\n方便为您提供本地新闻和天气信息，并且根据您的位置信息发现附近的免费WiFi';
+    content.textContent = '请在使用前注意查看网站公告。我们可能有重要的更新或信息需要您了解。';
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'button-container';
@@ -99,8 +104,8 @@ function showPopup() {
 
     // 关闭弹窗事件
     function closePopup() {
-        overlay.style.animation = 'fadeIn 0.3s ease-out reverse';
-        popup.style.animation = 'slideIn 0.3s ease-out reverse';
+        overlay.style.animation = 'fadeOut 0.3s ease-out';
+        popup.style.animation = 'fadeOut 0.3s ease-out';
         setTimeout(() => {
             document.body.removeChild(overlay);
         }, 300);
@@ -108,8 +113,6 @@ function showPopup() {
 
     closeButton.addEventListener('click', closePopup);
     notTodayButton.addEventListener('click', function() {
-        // 这里可以添加逻辑来设置一个标志，表示今天不再显示
-        // 例如，可以使用 localStorage 来存储这个信息
         localStorage.setItem('doNotShowPopupToday', new Date().toDateString());
         closePopup();
     });
@@ -122,4 +125,14 @@ function showPopup() {
     document.body.appendChild(overlay);
 }
 
-window.onload = showPopup;
+// 检查是否应该显示弹窗
+function shouldShowPopup() {
+    const lastShownDate = localStorage.getItem('doNotShowPopupToday');
+    return lastShownDate !== new Date().toDateString();
+}
+
+window.onload = function() {
+    if (shouldShowPopup()) {
+        showPopup();
+    }
+};
