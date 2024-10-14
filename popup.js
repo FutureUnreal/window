@@ -25,15 +25,15 @@ function showPopup() {
         }
         #popup-box {
             background-color: #fff;
-            padding: 30px;
+            padding: 20px;
             border-radius: 10px;
             box-shadow: 
                 0 10px 25px rgba(0,0,0,0.2),
                 0 0 0 3px rgba(130, 46, 251, 0.3),
                 0 0 20px 10px rgba(130, 46, 251, 0.2);
             text-align: center;
-            max-width: 400px;
-            width: 80%;
+            width: 90%;
+            max-width: 300px;
             animation: slideIn 0.3s ease-out;
             position: relative;
         }
@@ -50,13 +50,13 @@ function showPopup() {
             filter: blur(10px);
         }
         #popup-content {
-            font-size: 18px;
+            font-size: 16px;
             margin-bottom: 20px;
             color: #333;
         }
         #close-button {
-            padding: 10px 20px;
-            font-size: 16px;
+            padding: 8px 16px;
+            font-size: 14px;
             color: #fff;
             background-color: #822efb;
             border: none;
@@ -69,6 +69,19 @@ function showPopup() {
         }
         #close-button:active {
             transform: scale(0.95);
+        }
+        @media (min-width: 768px) {
+            #popup-box {
+                max-width: 400px;
+                padding: 30px;
+            }
+            #popup-content {
+                font-size: 18px;
+            }
+            #close-button {
+                padding: 10px 20px;
+                font-size: 16px;
+            }
         }
     `;
     document.head.appendChild(style);
@@ -83,7 +96,7 @@ function showPopup() {
 
     const content = document.createElement('p');
     content.id = 'popup-content';
-    content.textContent = '这是一个带有明亮紫色边框的弹窗！';
+    content.textContent = '这是一个响应式的紫色边框弹窗！';
 
     const closeButton = document.createElement('button');
     closeButton.id = 'close-button';
