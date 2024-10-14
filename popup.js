@@ -44,7 +44,7 @@ function showPopup() {
             color: #000;
             font-weight: 400;
             padding: 20px;
-            text-align: left;
+            text-align: center;
             line-height: 1.4;
         }
         .button-container {
@@ -89,7 +89,7 @@ function showPopup() {
 
     const content = document.createElement('p');
     content.id = 'popup-content';
-    content.textContent = '请在使用前注意查看网站公告。我们可能有重要的更新或信息需要您了解。';
+    content.textContent = '请在使用前注意查看网站公告。我们可能有重要的更新或信息需要您了解！！！';
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'button-container';
