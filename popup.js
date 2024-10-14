@@ -27,27 +27,28 @@ function showPopup() {
             background: rgba(250, 250, 250, 0.95);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            padding: 20px;
             border-radius: 14px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            text-align: center;
             width: 270px;
             animation: slideIn 0.3s ease-out;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         #popup-content {
             font-size: 13px;
-            margin-bottom: 20px;
             color: #000;
             font-weight: 400;
+            padding: 20px;
+            text-align: center;
         }
         .button-container {
             display: flex;
-            justify-content: space-between;
             border-top: 1px solid #e1e1e1;
         }
         .popup-button {
             flex: 1;
-            padding: 10px 0;
+            padding: 12px 0;
             font-size: 17px;
             color: #007AFF;
             background-color: transparent;
@@ -58,6 +59,10 @@ function showPopup() {
         }
         .popup-button:first-child {
             border-right: 1px solid #e1e1e1;
+            font-weight: 400;
+            color: #000;
+        }
+        .popup-button:last-child {
             font-weight: 600;
         }
         .popup-button:hover {
@@ -84,13 +89,13 @@ function showPopup() {
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'button-container';
 
-    const notAllowButton = document.createElement('button');
-    notAllowButton.className = 'popup-button';
-    notAllowButton.textContent = '不允许';
+    const closeButton = document.createElement('button');
+    closeButton.className = 'popup-button';
+    closeButton.textContent = '关闭';
 
-    const allowButton = document.createElement('button');
-    allowButton.className = 'popup-button';
-    allowButton.textContent = '允许';
+    const notTodayButton = document.createElement('button');
+    notTodayButton.className = 'popup-button';
+    notTodayButton.textContent = '今日不再提醒';
 
     // 关闭弹窗事件
     function closePopup() {
@@ -101,11 +106,16 @@ function showPopup() {
         }, 300);
     }
 
-    notAllowButton.addEventListener('click', closePopup);
-    allowButton.addEventListener('click', closePopup);
+    closeButton.addEventListener('click', closePopup);
+    notTodayButton.addEventListener('click', function() {
+        // 这里可以添加逻辑来设置一个标志，表示今天不再显示
+        // 例如，可以使用 localStorage 来存储这个信息
+        localStorage.setItem('doNotShowPopupToday', new Date().toDateString());
+        closePopup();
+    });
 
-    buttonContainer.appendChild(notAllowButton);
-    buttonContainer.appendChild(allowButton);
+    buttonContainer.appendChild(closeButton);
+    buttonContainer.appendChild(notTodayButton);
     popup.appendChild(content);
     popup.appendChild(buttonContainer);
     overlay.appendChild(popup);
