@@ -1,6 +1,7 @@
 function showPopup() {
     // 创建遮罩层
     var overlay = document.createElement('div');
+    overlay.id = 'popup-overlay';
     overlay.style.position = 'fixed';
     overlay.style.left = '0';
     overlay.style.top = '0';
@@ -14,6 +15,7 @@ function showPopup() {
 
     // 创建弹窗
     var popup = document.createElement('div');
+    popup.id = 'popup-box';
     popup.style.backgroundColor = '#fff';
     popup.style.padding = '30px';
     popup.style.borderRadius = '10px';
@@ -47,7 +49,8 @@ function showPopup() {
 
     // 关闭弹窗事件
     closeButton.addEventListener('click', function() {
-        overlay.remove();
+        // 移除弹窗和遮罩层
+        document.body.removeChild(overlay);
     });
 
     popup.appendChild(content);
