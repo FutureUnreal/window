@@ -29,8 +29,8 @@ function showPopup() {
             border-radius: 10px;
             box-shadow: 
                 0 10px 25px rgba(0,0,0,0.2),
-                0 0 0 3px rgba(128, 0, 128, 0.3),
-                0 0 20px 10px rgba(128, 0, 128, 0.2);
+                0 0 0 3px rgba(130, 46, 251, 0.3),
+                0 0 20px 10px rgba(130, 46, 251, 0.2);
             text-align: center;
             max-width: 400px;
             width: 80%;
@@ -44,7 +44,7 @@ function showPopup() {
             left: -5px;
             right: -5px;
             bottom: -5px;
-            background: rgba(128, 0, 128, 0.1);
+            background: rgba(130, 46, 251, 0.1);
             border-radius: 15px;
             z-index: -1;
             filter: blur(10px);
@@ -58,14 +58,14 @@ function showPopup() {
             padding: 10px 20px;
             font-size: 16px;
             color: #fff;
-            background-color: #3498db;
+            background-color: #822efb;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s, transform 0.1s;
         }
         #close-button:hover {
-            background-color: #2980b9;
+            background-color: #6a25c9;
         }
         #close-button:active {
             transform: scale(0.95);
@@ -83,7 +83,7 @@ function showPopup() {
 
     const content = document.createElement('p');
     content.id = 'popup-content';
-    content.textContent = '这是一个带有虚化紫色边框的弹窗！';
+    content.textContent = '这是一个带有明亮紫色边框的弹窗！';
 
     const closeButton = document.createElement('button');
     closeButton.id = 'close-button';
