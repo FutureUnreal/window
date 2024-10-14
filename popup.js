@@ -27,11 +27,27 @@ function showPopup() {
             background-color: #fff;
             padding: 30px;
             border-radius: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            box-shadow: 
+                0 10px 25px rgba(0,0,0,0.2),
+                0 0 0 3px rgba(128, 0, 128, 0.3),
+                0 0 20px 10px rgba(128, 0, 128, 0.2);
             text-align: center;
             max-width: 400px;
             width: 80%;
             animation: slideIn 0.3s ease-out;
+            position: relative;
+        }
+        #popup-box::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            background: rgba(128, 0, 128, 0.1);
+            border-radius: 15px;
+            z-index: -1;
+            filter: blur(10px);
         }
         #popup-content {
             font-size: 18px;
@@ -67,7 +83,7 @@ function showPopup() {
 
     const content = document.createElement('p');
     content.id = 'popup-content';
-    content.textContent = '这是一个美化后的弹窗！';
+    content.textContent = '这是一个带有虚化紫色边框的弹窗！';
 
     const closeButton = document.createElement('button');
     closeButton.id = 'close-button';
