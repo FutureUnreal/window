@@ -89,7 +89,7 @@ function showPopup() {
 
     const content = document.createElement('p');
     content.id = 'popup-content';
-    content.textContent = '请在使用前注意查看网站公告。若网站无法使用请等待十分钟后查看公告内重要通知，我们可能有重要的更新或信息需要您了解！！！';
+    content.textContent = '请在使用前注意查看网站公告。我们可能有重要的更新或信息需要您了解！！！';
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'button-container';
