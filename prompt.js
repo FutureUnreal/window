@@ -40,7 +40,7 @@ function createDraggableWrapper() {
         width: 35px;
         height: 35px;
         z-index: 1000;
-        cursor: move;
+        cursor: pointer;
         touch-action: none;
         user-select: none;
     `;
@@ -54,14 +54,13 @@ function makeDraggable(wrapper) {
     let isDragging = false;
     let moveDistance = 0;
     let startTime;
-    let hasMoved = false;
 
     // 鼠标事件
     wrapper.addEventListener('mousedown', function(e) {
         if (e.button !== 0) return;
         startDrag(e.clientY);
-        hasMoved = false;
         e.preventDefault();
+        wrapper.style.cursor = 'move';
     });
 
     document.addEventListener('mousemove', function(e) {
@@ -73,13 +72,13 @@ function makeDraggable(wrapper) {
     document.addEventListener('mouseup', function(e) {
         if (!isDragging) return;
         stopDrag(e);
+        wrapper.style.cursor = 'pointer';
     });
 
     // 触摸事件
     wrapper.addEventListener('touchstart', function(e) {
         if (e.touches.length !== 1) return;
         startDrag(e.touches[0].clientY);
-        hasMoved = false;
         e.preventDefault();
     }, { passive: false });
 
@@ -107,10 +106,6 @@ function makeDraggable(wrapper) {
         if (!isDragging) return;
         const deltaY = clientY - startY;
         moveDistance += Math.abs(deltaY);
-        
-        if (moveDistance > 5) {
-            hasMoved = true;
-        }
 
         const newTop = startTop + deltaY;
         const maxTop = window.innerHeight - wrapper.offsetHeight;
@@ -132,8 +127,8 @@ function makeDraggable(wrapper) {
         // 保存位置
         localStorage.setItem('ai-shortcut-position', wrapper.style.top);
         
-        // 只有在没有明显移动且拖动时间短的情况下才触发点击
-        if (!hasMoved && dragDuration < 200 && wrapper.onclick) {
+        // 如果移动距离小于5px且时间小于200ms，则视为点击
+        if (moveDistance < 5 && dragDuration < 200 && wrapper.onclick) {
             wrapper.onclick(e);
         }
     }
