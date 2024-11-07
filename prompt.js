@@ -48,58 +48,19 @@ function createDraggableWrapper() {
 }
 
 // 处理拖拽功能
-function makeDraggable(wrapper) {
+function makeDraggable(wrapper, onClick) {
     let startY;
     let startTop;
     let isDragging = false;
     let moveDistance = 0;
-    let startTime;
-
-    // 鼠标事件
-    wrapper.addEventListener('mousedown', function(e) {
-        if (e.button !== 0) return;
-        startDrag(e.clientY);
-        e.preventDefault();
-        wrapper.style.cursor = 'move';
-    });
-
-    document.addEventListener('mousemove', function(e) {
-        if (!isDragging) return;
-        moveElement(e.clientY);
-        e.preventDefault();
-    });
-
-    document.addEventListener('mouseup', function(e) {
-        if (!isDragging) return;
-        stopDrag(e);
-        wrapper.style.cursor = 'pointer';
-    });
-
-    // 触摸事件
-    wrapper.addEventListener('touchstart', function(e) {
-        if (e.touches.length !== 1) return;
-        startDrag(e.touches[0].clientY);
-        e.preventDefault();
-    }, { passive: false });
-
-    document.addEventListener('touchmove', function(e) {
-        if (!isDragging || e.touches.length !== 1) return;
-        moveElement(e.touches[0].clientY);
-        e.preventDefault();
-    }, { passive: false });
-
-    document.addEventListener('touchend', function(e) {
-        if (!isDragging) return;
-        stopDrag(e);
-    });
+    let dragStartTime;
 
     function startDrag(clientY) {
         isDragging = true;
         startY = clientY;
         startTop = wrapper.offsetTop;
         moveDistance = 0;
-        startTime = Date.now();
-        wrapper.style.transition = 'none';
+        dragStartTime = Date.now();
     }
 
     function moveElement(clientY) {
@@ -114,24 +75,55 @@ function makeDraggable(wrapper) {
         wrapper.style.top = boundedTop + 'px';
         startY = clientY;
         startTop = boundedTop;
+
+        // 保存新位置
+        localStorage.setItem('ai-shortcut-position', wrapper.style.top);
     }
 
-    function stopDrag(e) {
+    function stopDrag() {
         if (!isDragging) return;
-        const endTime = Date.now();
-        const dragDuration = endTime - startTime;
-        
         isDragging = false;
-        wrapper.style.transition = '';
-        
-        // 保存位置
-        localStorage.setItem('ai-shortcut-position', wrapper.style.top);
-        
-        // 如果移动距离小于5px且时间小于200ms，则视为点击
-        if (moveDistance < 5 && dragDuration < 200 && wrapper.onclick) {
-            wrapper.onclick(e);
+
+        const dragDuration = Date.now() - dragStartTime;
+        // 只在移动距离小且拖动时间短的情况下触发点击
+        if (moveDistance < 5 && dragDuration < 200) {
+            onClick();
         }
     }
+
+    // 鼠标事件
+    wrapper.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        startDrag(e.clientY);
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        moveElement(e.clientY);
+    });
+
+    document.addEventListener('mouseup', () => {
+        stopDrag();
+    });
+
+    // 触摸事件
+    wrapper.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 1) return;
+        e.preventDefault();
+        startDrag(e.touches[0].clientY);
+    }, { passive: false });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!isDragging || e.touches.length !== 1) return;
+        e.preventDefault();
+        moveElement(e.touches[0].clientY);
+    }, { passive: false });
+
+    document.addEventListener('touchend', () => {
+        stopDrag();
+    });
 
     // 恢复保存的位置
     const savedTop = localStorage.getItem('ai-shortcut-position');
@@ -163,11 +155,9 @@ function createSidebar() {
     
     wrapper.appendChild(toggleIcon);
 
-    // 添加拖拽功能
-    makeDraggable(wrapper);
-
-    // 统一的点击处理逻辑
     let popupWindow = null;
+
+    // 点击处理函数
     const handleClick = () => {
         if (isMobile() || hostsRequiringPopup.includes(hostname)) {
             if (popupWindow && !popupWindow.closed) {
@@ -184,8 +174,8 @@ function createSidebar() {
         }
     };
 
-    // 设置点击处理器
-    wrapper.onclick = handleClick;
+    // 添加拖拽功能，传入点击处理函数
+    makeDraggable(wrapper, handleClick);
 
     // 如果是桌面端且不在特定域名列表中，创建侧边栏
     if (!isMobile() && !hostsRequiringPopup.includes(hostname)) {
