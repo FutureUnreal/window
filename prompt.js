@@ -24,6 +24,73 @@ function isElementExists(id) {
     return document.getElementById(id) !== null;
 }
 
+// 添加拖拽功能
+function makeDraggable(element) {
+    let isDragging = false;
+    let currentY;
+    let initialY;
+    let yOffset = 0;
+
+    element.addEventListener('mousedown', dragStart);
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', dragEnd);
+
+    function dragStart(e) {
+        if (e.target === element) {
+            initialY = e.clientY - yOffset;
+            isDragging = true;
+        }
+    }
+
+    function drag(e) {
+        if (isDragging) {
+            e.preventDefault();
+            currentY = e.clientY - initialY;
+            yOffset = currentY;
+
+            // 限制在视窗范围内
+            const maxY = window.innerHeight - element.offsetHeight;
+            const boundedY = Math.min(Math.max(currentY, 0), maxY);
+            
+            // 只改变top值，保持right值不变
+            element.style.top = boundedY + 'px';
+            element.style.bottom = 'auto';
+        }
+    }
+
+    function dragEnd() {
+        initialY = currentY;
+        isDragging = false;
+    }
+
+    // 添加触摸支持
+    element.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        initialY = touch.clientY - yOffset;
+        isDragging = true;
+    });
+
+    document.addEventListener('touchmove', (e) => {
+        if (isDragging) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            currentY = touch.clientY - initialY;
+            yOffset = currentY;
+
+            const maxY = window.innerHeight - element.offsetHeight;
+            const boundedY = Math.min(Math.max(currentY, 0), maxY);
+            
+            element.style.top = boundedY + 'px';
+            element.style.bottom = 'auto';
+        }
+    });
+
+    document.addEventListener('touchend', () => {
+        initialY = currentY;
+        isDragging = false;
+    });
+}
+
 // 创建侧边栏
 function createSidebar() {
     // 如果已经存在侧边栏，则不重复创建
@@ -41,40 +108,44 @@ function createSidebar() {
     toggleIcon.setAttribute('height', '35');
     toggleIcon.innerHTML = '<path d="M85.333333 490.666667A64 64 0 0 0 149.333333 554.666667h725.333334a64 64 0 0 0 0-128h-725.333334A64 64 0 0 0 85.333333 490.666667z" fill="#5cac7c"></path><path d="M405.333333 853.333333a64 64 0 0 1 0-128h469.333334a64 64 0 0 1 0 128h-469.333334z m256-597.333333a64 64 0 0 1 0-128h213.333334a64 64 0 0 1 0 128h-213.333334z" fill="#5cac7c" opacity=".5"></path>';
     
+    // 设置初始样式
     toggleIcon.style.position = 'fixed';
-    toggleIcon.style.bottom = '300px';
+    toggleIcon.style.top = '300px'; // 改用 top 而不是 bottom
     toggleIcon.style.right = '15px';
-    toggleIcon.style.zIndex = '9999999';  // 提高 z-index 确保显示
-    toggleIcon.style.cursor = 'pointer';
-    toggleIcon.style.background = '#fff';  // 添加白色背景
-    toggleIcon.style.borderRadius = '50%'; // 圆形背景
-    toggleIcon.style.padding = '5px';      // 添加内边距
-    toggleIcon.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)'; // 添加阴影效果
+    toggleIcon.style.zIndex = '1000';
+    toggleIcon.style.cursor = 'move'; // 改为移动光标
     
     document.body.appendChild(toggleIcon);
+
+    // 添加拖拽功能
+    makeDraggable(toggleIcon);
 
     if (hostsRequiringPopup.includes(hostname)) {
         let popupWindow = null;
         toggleIcon.addEventListener('click', function() {
-            if (popupWindow && !popupWindow.closed) {
-                popupWindow.close();
-                popupWindow = null;
-            } else {
-                popupWindow = window.open(iframeUrl, '_blank', 'width=500,height=700');
+            if (!isDragging) { // 只在非拖拽状态处理点击事件
+                if (popupWindow && !popupWindow.closed) {
+                    popupWindow.close();
+                    popupWindow = null;
+                } else {
+                    popupWindow = window.open(iframeUrl, '_blank', 'width=500,height=700');
+                }
             }
         });
     } else {
         // 创建侧边栏 iframe
         const iframe = document.createElement('iframe');
         iframe.id = 'ai-shortcut-sidebar';
-        iframe.style.cssText = 'width:400px;height:100%;position:fixed;right:-400px;top:0;z-index:9999998;border:none;transition:right 0.3s ease;box-shadow:-2px 0 5px rgba(0,0,0,0.2);background:#fff;';
+        iframe.style.cssText = 'width:400px;height:100%;position:fixed;right:-400px;top:0;z-index:999;border:none;transition:right 0.3s ease;';
         iframe.src = iframeUrl;
         
         document.body.appendChild(iframe);
         
         // 添加点击事件
         toggleIcon.addEventListener('click', function() {
-            iframe.style.right = (iframe.style.right === '0px') ? '-400px' : '0px';
+            if (!isDragging) { // 只在非拖拽状态处理点击事件
+                iframe.style.right = (iframe.style.right === '0px') ? '-400px' : '0px';
+            }
         });
     }
 }
