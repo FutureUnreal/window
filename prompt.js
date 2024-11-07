@@ -2,7 +2,7 @@
 const AVAILABLE_LANGUAGES = ['en', 'zh', 'ja', 'ko', 'es', 'fr', 'de', 'it', 'ru', 'pt', 'hi', 'ar', 'bn'];
 
 // 需要弹出窗口的主机名列表
-const hostsRequiringPopup = ['chatgpt.com', 'gemini.google.com', 'groq.com', 'openrouter.ai', 'tongyi.aliyun.com', 'isgpt.cloud', 'ai-unreal.com', 'www.ai-unreal.com'];
+const hostsRequiringPopup = ['chatgpt.com', 'gemini.google.com', 'groq.com', 'openrouter.ai', 'tongyi.aliyun.com'];
 
 // 获取当前主机名
 const hostname = window.location.hostname;
