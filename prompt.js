@@ -5,32 +5,44 @@ const AVAILABLE_LANGUAGES = ['en', 'zh', 'ja', 'ko', 'es', 'fr', 'de', 'it', 'ru
 const allowedHosts = [
     'isgpt.cloud',
     'ai-unreal.com',
-    'www.ai-unreal.com',
-    'chatgpt.com',
-    'claude.ai',
-    'gemini.google.com',
-    'yiyan.baidu.com',
-    'chatglm.cn',
-    'siliconflow.cn',
-    'tongyi.aliyun.com',
-    'kimi.moonshot.cn',
-    'www.doubao.com',
-    'xinghuo.xfyun.cn',
-    'ying.baichuan-ai.com',
-    'yuanbao.tencent.com',
-    'groq.com',
-    'openrouter.ai'
+    'www.ai-unreal.com'
 ];
 
-// 需要弹出窗口的主机名列表
-const hostsRequiringPopup = ['chatgpt.com', 'gemini.google.com', 'groq.com', 'openrouter.ai', 'tongyi.aliyun.com', 'isgpt.cloud', 'ai-unreal.com', 'www.ai-unreal.com'];
+// 允许的路径规则
+const allowedPathPatterns = [
+    '^/?$',                         // 首页 https://isgpt.cloud/
+    '^/chat/[\\w-]+$',             // 聊天页 https://isgpt.cloud/chat/96674f63-bcae-4ae9-a7c4-a197a3efb
+    '^/new/?$',                    // 新建页 https://isgpt.cloud/new/
+    '^/c/[\\w-]+$',                // c路径页 https://isgpt.cloud/c/435erwf
+    '^/pastel/#/carlist$',         // 列表页 https://isgpt.cloud/pastel/#/carlist
+];
 
-// 获取当前主机名
+// 获取当前主机名和路径
 const hostname = window.location.hostname;
+const pathname = window.location.pathname + window.location.hash;
 
-// 检查当前网站是否在白名单中
-function isAllowedHost() {
-    return allowedHosts.some(host => hostname.includes(host));
+// 检查当前网站和路径是否允许
+function isAllowed() {
+    // 检查主机名是否允许
+    const hostAllowed = allowedHosts.some(host => hostname.includes(host));
+    if (!hostAllowed) return false;
+
+    // 获取完整路径（移除查询参数）
+    const fullPath = window.location.pathname + window.location.hash;
+    const pathWithoutQuery = fullPath.split('?')[0];
+
+    // 检查路径是否匹配任何允许的模式
+    const pathAllowed = allowedPathPatterns.some(pattern => {
+        const regex = new RegExp(pattern);
+        return regex.test(pathWithoutQuery);
+    });
+
+    console.log('Path check:', {
+        path: pathWithoutQuery,
+        allowed: pathAllowed
+    });
+
+    return pathAllowed;
 }
 
 // 获取用户语言
@@ -52,8 +64,9 @@ function isElementExists(id) {
 
 // 创建侧边栏
 function createSidebar() {
-    // 如果网站不在白名单中，直接返回
-    if (!isAllowedHost()) {
+    // 如果不允许在当前页面显示，直接返回
+    if (!isAllowed()) {
+        console.log('Not allowed on current page:', window.location.href);
         return;
     }
     
@@ -61,6 +74,8 @@ function createSidebar() {
     if (isElementExists('ai-shortcut-sidebar') || isElementExists('ai-shortcut-toggle')) {
         return;
     }
+    
+    console.log('Creating sidebar for:', window.location.href);
     
     const iframeUrl = getIframeUrl();
     
@@ -84,81 +99,95 @@ function createSidebar() {
     
     document.body.appendChild(toggleIcon);
 
-    if (hostsRequiringPopup.includes(hostname)) {
-        let popupWindow = null;
-        toggleIcon.addEventListener('click', function() {
-            if (popupWindow && !popupWindow.closed) {
-                popupWindow.close();
-                popupWindow = null;
-            } else {
-                popupWindow = window.open(iframeUrl, '_blank', 'width=500,height=700');
-            }
-        });
-    } else {
-        // 创建侧边栏 iframe
-        const iframe = document.createElement('iframe');
-        iframe.id = 'ai-shortcut-sidebar';
-        iframe.style.cssText = 'width:400px;height:100%;position:fixed;right:-400px;top:0;z-index:9999998;border:none;transition:right 0.3s ease;box-shadow:-2px 0 5px rgba(0,0,0,0.2);background:#fff;';
-        iframe.src = iframeUrl;
-        
-        document.body.appendChild(iframe);
-        
-        // 添加点击事件
-        toggleIcon.addEventListener('click', function() {
-            iframe.style.right = (iframe.style.right === '0px') ? '-400px' : '0px';
-        });
-    }
+    // 创建侧边栏 iframe
+    const iframe = document.createElement('iframe');
+    iframe.id = 'ai-shortcut-sidebar';
+    iframe.style.cssText = 'width:400px;height:100%;position:fixed;right:-400px;top:0;z-index:9999998;border:none;transition:right 0.3s ease;box-shadow:-2px 0 5px rgba(0,0,0,0.2);background:#fff;';
+    iframe.src = iframeUrl;
+    
+    document.body.appendChild(iframe);
+    
+    // 添加点击事件
+    toggleIcon.addEventListener('click', function() {
+        iframe.style.right = (iframe.style.right === '0px') ? '-400px' : '0px';
+    });
 }
 
 // 初始化函数
-function initializeSidebar() {
-    // 检查必要的DOM元素是否已加载
+function initialize() {
     if (document.body) {
         createSidebar();
     } else {
-        // 如果body还没加载，等待DOMContentLoaded事件
         document.addEventListener('DOMContentLoaded', createSidebar);
     }
 }
 
-// 监听路由变化（针对单页应用）
-function listenToRouteChanges() {
-    // 监听 URL 变化
+// 监听 URL 变化
+function listenToUrlChanges() {
     let lastUrl = location.href;
-    new MutationObserver(() => {
-        const url = location.href;
-        if (url !== lastUrl) {
-            lastUrl = url;
-            initializeSidebar();
+    
+    // 创建一个观察器来监听 URL 变化
+    const observer = new MutationObserver(function() {
+        if (lastUrl !== location.href) {
+            lastUrl = location.href;
+            console.log('URL changed to:', location.href);
+            createSidebar();
         }
-    }).observe(document, { subtree: true, childList: true });
-
-    // 监听 history 变化
-    if (window.history && window.history.pushState) {
-        const pushState = history.pushState;
-        history.pushState = function() {
-            pushState.apply(history, arguments);
-            initializeSidebar();
-        };
-
-        window.addEventListener('popstate', initializeSidebar);
-    }
+    });
+    
+    // 监听整个文档的变化
+    observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true
+    });
+    
+    // 监听 pushState 和 replaceState
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+    
+    history.pushState = function() {
+        originalPushState.apply(this, arguments);
+        createSidebar();
+    };
+    
+    history.replaceState = function() {
+        originalReplaceState.apply(this, arguments);
+        createSidebar();
+    };
+    
+    // 监听 popstate 事件
+    window.addEventListener('popstate', function() {
+        createSidebar();
+    });
+    
+    // 监听 hashchange 事件
+    window.addEventListener('hashchange', function() {
+        createSidebar();
+    });
 }
 
-// 启动初始化
+// 定期检查路由变化
+function startPeriodicCheck() {
+    setInterval(function() {
+        if (!isElementExists('ai-shortcut-sidebar') && !isElementExists('ai-shortcut-toggle')) {
+            createSidebar();
+        }
+    }, 2000);
+}
+
+// 启动脚本
 (function() {
-    // 只在允许的网站上初始化
-    if (isAllowedHost()) {
-        // 立即尝试初始化
-        initializeSidebar();
-        
-        // 监听页面加载完成事件
-        window.addEventListener('load', initializeSidebar);
-        
-        // 启动路由监听
-        listenToRouteChanges();
-        
-        // 定期检查（作为后备方案）
-        setInterval(initializeSidebar, 2000);
-    }
+    console.log('Initializing AI-Unreal sidebar for:', window.location.href);
+    
+    // 初始化
+    initialize();
+    
+    // 监听加载完成事件
+    window.addEventListener('load', initialize);
+    
+    // 启动 URL 变化监听
+    listenToUrlChanges();
+    
+    // 启动定期检查
+    startPeriodicCheck();
 })();
