@@ -7,6 +7,11 @@ const hostsRequiringPopup = ['chatgpt.com', 'gemini.google.com', 'groq.com', 'op
 // 获取当前主机名
 const hostname = window.location.hostname;
 
+// 检测是否是移动设备
+function isMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
 // 获取用户语言
 function getLanguage() {
     const browserLanguage = navigator.language.split('-')[0];
@@ -47,11 +52,12 @@ function makeDraggable(wrapper) {
     let startY;
     let startTop;
     let isDragging = false;
-    let lastClick = 0;
+    let moveDistance = 0;
+    let startTime;
 
     // 鼠标事件
     wrapper.addEventListener('mousedown', function(e) {
-        if (e.button !== 0) return; // 只响应左键
+        if (e.button !== 0) return;
         startDrag(e.clientY);
         e.preventDefault();
     });
@@ -62,7 +68,9 @@ function makeDraggable(wrapper) {
         e.preventDefault();
     });
 
-    document.addEventListener('mouseup', stopDrag);
+    document.addEventListener('mouseup', function(e) {
+        stopDrag(e);
+    });
 
     // 触摸事件
     wrapper.addEventListener('touchstart', function(e) {
@@ -77,34 +85,51 @@ function makeDraggable(wrapper) {
         e.preventDefault();
     }, { passive: false });
 
-    document.addEventListener('touchend', stopDrag);
+    document.addEventListener('touchend', function(e) {
+        stopDrag(e);
+    });
 
     function startDrag(clientY) {
         isDragging = true;
         startY = clientY;
         startTop = wrapper.offsetTop;
+        moveDistance = 0;
+        startTime = Date.now();
         wrapper.style.transition = 'none';
     }
 
     function moveElement(clientY) {
         if (!isDragging) return;
         const deltaY = clientY - startY;
-        const newTop = startTop + deltaY;
+        moveDistance += Math.abs(deltaY);
         
+        const newTop = startTop + deltaY;
         // 限制在视窗范围内
         const maxTop = window.innerHeight - wrapper.offsetHeight;
         const boundedTop = Math.min(Math.max(0, newTop), maxTop);
         
         wrapper.style.top = boundedTop + 'px';
+        startY = clientY;
+        startTop = boundedTop;
     }
 
-    function stopDrag() {
+    function stopDrag(e) {
         if (!isDragging) return;
+        const endTime = Date.now();
+        const dragDuration = endTime - startTime;
+        
         isDragging = false;
         wrapper.style.transition = '';
         
         // 保存位置
         localStorage.setItem('ai-shortcut-position', wrapper.style.top);
+        
+        // 如果移动距离小于5px且时间小于200ms，则视为点击
+        const isClick = moveDistance < 5 && dragDuration < 200;
+        
+        if (isClick && wrapper.onclick) {
+            wrapper.onclick(e);
+        }
     }
 
     // 恢复保存的位置
@@ -112,10 +137,6 @@ function makeDraggable(wrapper) {
     if (savedTop) {
         wrapper.style.top = savedTop;
     }
-
-    return {
-        isDragging: () => isDragging
-    };
 }
 
 // 创建侧边栏
@@ -142,21 +163,21 @@ function createSidebar() {
     wrapper.appendChild(toggleIcon);
 
     // 添加拖拽功能
-    const dragHandler = makeDraggable(wrapper);
+    makeDraggable(wrapper);
 
-    if (hostsRequiringPopup.includes(hostname)) {
+    // 如果是移动设备或在特定域名列表中，使用弹窗方式
+    if (isMobile() || hostsRequiringPopup.includes(hostname)) {
         let popupWindow = null;
-        wrapper.addEventListener('click', function(e) {
-            if (!dragHandler.isDragging()) {
-                if (popupWindow && !popupWindow.closed) {
-                    popupWindow.close();
-                    popupWindow = null;
-                } else {
-                    popupWindow = window.open(iframeUrl, '_blank', 'width=500,height=700');
-                }
+        wrapper.onclick = function(e) {
+            if (popupWindow && !popupWindow.closed) {
+                popupWindow.close();
+                popupWindow = null;
+            } else {
+                popupWindow = window.open(iframeUrl, '_blank', 'width=500,height=700');
             }
-        });
+        };
     } else {
+        // 桌面端且不在特定域名列表中时使用侧边栏
         const iframe = document.createElement('iframe');
         iframe.id = 'ai-shortcut-sidebar';
         iframe.style.cssText = 'width:400px;height:100%;position:fixed;right:-400px;top:0;z-index:999;border:none;transition:right 0.3s ease;';
@@ -164,11 +185,9 @@ function createSidebar() {
         
         document.body.appendChild(iframe);
         
-        wrapper.addEventListener('click', function() {
-            if (!dragHandler.isDragging()) {
-                iframe.style.right = (iframe.style.right === '0px') ? '-400px' : '0px';
-            }
-        });
+        wrapper.onclick = function() {
+            iframe.style.right = (iframe.style.right === '0px') ? '-400px' : '0px';
+        };
     }
 }
 
