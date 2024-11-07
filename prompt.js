@@ -54,11 +54,13 @@ function makeDraggable(wrapper) {
     let isDragging = false;
     let moveDistance = 0;
     let startTime;
+    let hasMoved = false;
 
     // 鼠标事件
     wrapper.addEventListener('mousedown', function(e) {
         if (e.button !== 0) return;
         startDrag(e.clientY);
+        hasMoved = false;
         e.preventDefault();
     });
 
@@ -69,6 +71,7 @@ function makeDraggable(wrapper) {
     });
 
     document.addEventListener('mouseup', function(e) {
+        if (!isDragging) return;
         stopDrag(e);
     });
 
@@ -76,6 +79,7 @@ function makeDraggable(wrapper) {
     wrapper.addEventListener('touchstart', function(e) {
         if (e.touches.length !== 1) return;
         startDrag(e.touches[0].clientY);
+        hasMoved = false;
         e.preventDefault();
     }, { passive: false });
 
@@ -86,6 +90,7 @@ function makeDraggable(wrapper) {
     }, { passive: false });
 
     document.addEventListener('touchend', function(e) {
+        if (!isDragging) return;
         stopDrag(e);
     });
 
@@ -103,8 +108,11 @@ function makeDraggable(wrapper) {
         const deltaY = clientY - startY;
         moveDistance += Math.abs(deltaY);
         
+        if (moveDistance > 5) {
+            hasMoved = true;
+        }
+
         const newTop = startTop + deltaY;
-        // 限制在视窗范围内
         const maxTop = window.innerHeight - wrapper.offsetHeight;
         const boundedTop = Math.min(Math.max(0, newTop), maxTop);
         
@@ -124,10 +132,8 @@ function makeDraggable(wrapper) {
         // 保存位置
         localStorage.setItem('ai-shortcut-position', wrapper.style.top);
         
-        // 如果移动距离小于5px且时间小于200ms，则视为点击
-        const isClick = moveDistance < 5 && dragDuration < 200;
-        
-        if (isClick && wrapper.onclick) {
+        // 只有在没有明显移动且拖动时间短的情况下才触发点击
+        if (!hasMoved && dragDuration < 200 && wrapper.onclick) {
             wrapper.onclick(e);
         }
     }
@@ -158,36 +164,41 @@ function createSidebar() {
     toggleIcon.setAttribute('width', '35');
     toggleIcon.setAttribute('height', '35');
     toggleIcon.innerHTML = '<path d="M85.333333 490.666667A64 64 0 0 0 149.333333 554.666667h725.333334a64 64 0 0 0 0-128h-725.333334A64 64 0 0 0 85.333333 490.666667z" fill="#5cac7c"></path><path d="M405.333333 853.333333a64 64 0 0 1 0-128h469.333334a64 64 0 0 1 0 128h-469.333334z m256-597.333333a64 64 0 0 1 0-128h213.333334a64 64 0 0 1 0 128h-213.333334z" fill="#5cac7c" opacity=".5"></path>';
-    toggleIcon.style.pointerEvents = 'none'; // 防止图标干扰拖动
+    toggleIcon.style.pointerEvents = 'none';
     
     wrapper.appendChild(toggleIcon);
 
     // 添加拖拽功能
     makeDraggable(wrapper);
 
-    // 如果是移动设备或在特定域名列表中，使用弹窗方式
-    if (isMobile() || hostsRequiringPopup.includes(hostname)) {
-        let popupWindow = null;
-        wrapper.onclick = function(e) {
+    // 统一的点击处理逻辑
+    let popupWindow = null;
+    const handleClick = () => {
+        if (isMobile() || hostsRequiringPopup.includes(hostname)) {
             if (popupWindow && !popupWindow.closed) {
                 popupWindow.close();
                 popupWindow = null;
             } else {
-                popupWindow = window.open(iframeUrl, '_blank', 'width=500,height=700');
+                popupWindow = window.open(iframeUrl, '_blank');
             }
-        };
-    } else {
-        // 桌面端且不在特定域名列表中时使用侧边栏
+        } else {
+            const iframe = document.getElementById('ai-shortcut-sidebar');
+            if (iframe) {
+                iframe.style.right = (iframe.style.right === '0px') ? '-400px' : '0px';
+            }
+        }
+    };
+
+    // 设置点击处理器
+    wrapper.onclick = handleClick;
+
+    // 如果是桌面端且不在特定域名列表中，创建侧边栏
+    if (!isMobile() && !hostsRequiringPopup.includes(hostname)) {
         const iframe = document.createElement('iframe');
         iframe.id = 'ai-shortcut-sidebar';
         iframe.style.cssText = 'width:400px;height:100%;position:fixed;right:-400px;top:0;z-index:999;border:none;transition:right 0.3s ease;';
         iframe.src = iframeUrl;
-        
         document.body.appendChild(iframe);
-        
-        wrapper.onclick = function() {
-            iframe.style.right = (iframe.style.right === '0px') ? '-400px' : '0px';
-        };
     }
 }
 
