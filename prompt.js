@@ -24,124 +24,130 @@ function isElementExists(id) {
     return document.getElementById(id) !== null;
 }
 
+// 创建一个包装器div来处理拖动
+function createDraggableWrapper() {
+    const wrapper = document.createElement('div');
+    wrapper.id = 'ai-shortcut-wrapper';
+    wrapper.style.cssText = `
+        position: fixed;
+        top: 300px;
+        right: 15px;
+        width: 35px;
+        height: 35px;
+        z-index: 1000;
+        cursor: move;
+        touch-action: none;
+        user-select: none;
+    `;
+    return wrapper;
+}
+
 // 处理拖拽功能
-function makeDraggable(element) {
+function makeDraggable(wrapper) {
+    let startY;
+    let startTop;
     let isDragging = false;
-    let startY = 0;
-    let startOffset = 0;
-    let moved = false;
-
-    // 保存位置到本地存储
-    function savePosition(top) {
-        localStorage.setItem('ai-shortcut-position', top);
-    }
-
-    // 从本地存储加载位置
-    function loadPosition() {
-        const savedTop = localStorage.getItem('ai-shortcut-position');
-        if (savedTop !== null) {
-            element.style.top = savedTop + 'px';
-        }
-    }
-
-    function onStart(y) {
-        isDragging = true;
-        moved = false;
-        startY = y;
-        startOffset = element.offsetTop;
-        element.style.cursor = 'grabbing';
-    }
-
-    function onMove(y) {
-        if (!isDragging) return;
-        moved = true;
-
-        let delta = y - startY;
-        let newTop = startOffset + delta;
-
-        // 限制在视窗范围内
-        const maxY = window.innerHeight - element.offsetHeight;
-        newTop = Math.min(Math.max(0, newTop), maxY);
-
-        element.style.top = newTop + 'px';
-        element.style.bottom = 'auto';
-        
-        // 保存新位置
-        savePosition(newTop);
-    }
-
-    function onEnd() {
-        isDragging = false;
-        element.style.cursor = 'grab';
-    }
+    let lastClick = 0;
 
     // 鼠标事件
-    element.addEventListener('mousedown', function(e) {
-        onStart(e.clientY);
+    wrapper.addEventListener('mousedown', function(e) {
+        if (e.button !== 0) return; // 只响应左键
+        startDrag(e.clientY);
+        e.preventDefault();
     });
 
     document.addEventListener('mousemove', function(e) {
-        onMove(e.clientY);
+        if (!isDragging) return;
+        moveElement(e.clientY);
+        e.preventDefault();
     });
 
-    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('mouseup', stopDrag);
 
     // 触摸事件
-    element.addEventListener('touchstart', function(e) {
-        onStart(e.touches[0].clientY);
+    wrapper.addEventListener('touchstart', function(e) {
+        if (e.touches.length !== 1) return;
+        startDrag(e.touches[0].clientY);
+        e.preventDefault();
     }, { passive: false });
 
     document.addEventListener('touchmove', function(e) {
-        if (isDragging) {
-            e.preventDefault();
-            onMove(e.touches[0].clientY);
-        }
+        if (!isDragging || e.touches.length !== 1) return;
+        moveElement(e.touches[0].clientY);
+        e.preventDefault();
     }, { passive: false });
 
-    document.addEventListener('touchend', onEnd);
+    document.addEventListener('touchend', stopDrag);
 
-    // 加载保存的位置
-    loadPosition();
+    function startDrag(clientY) {
+        isDragging = true;
+        startY = clientY;
+        startTop = wrapper.offsetTop;
+        wrapper.style.transition = 'none';
+    }
+
+    function moveElement(clientY) {
+        if (!isDragging) return;
+        const deltaY = clientY - startY;
+        const newTop = startTop + deltaY;
+        
+        // 限制在视窗范围内
+        const maxTop = window.innerHeight - wrapper.offsetHeight;
+        const boundedTop = Math.min(Math.max(0, newTop), maxTop);
+        
+        wrapper.style.top = boundedTop + 'px';
+    }
+
+    function stopDrag() {
+        if (!isDragging) return;
+        isDragging = false;
+        wrapper.style.transition = '';
+        
+        // 保存位置
+        localStorage.setItem('ai-shortcut-position', wrapper.style.top);
+    }
+
+    // 恢复保存的位置
+    const savedTop = localStorage.getItem('ai-shortcut-position');
+    if (savedTop) {
+        wrapper.style.top = savedTop;
+    }
 
     return {
-        hasMoved: () => moved,
-        resetMoved: () => { moved = false; }
+        isDragging: () => isDragging
     };
 }
 
 // 创建侧边栏
 function createSidebar() {
-    if (isElementExists('ai-shortcut-sidebar') || isElementExists('ai-shortcut-toggle')) {
+    if (isElementExists('ai-shortcut-wrapper')) {
         return;
     }
     
     const iframeUrl = getIframeUrl();
     
-    // 创建切换按钮
+    // 创建包装器
+    const wrapper = createDraggableWrapper();
+    document.body.appendChild(wrapper);
+    
+    // 创建图标
     const toggleIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     toggleIcon.id = 'ai-shortcut-toggle';
     toggleIcon.setAttribute('viewBox', '0 0 1024 1024');
     toggleIcon.setAttribute('width', '35');
     toggleIcon.setAttribute('height', '35');
     toggleIcon.innerHTML = '<path d="M85.333333 490.666667A64 64 0 0 0 149.333333 554.666667h725.333334a64 64 0 0 0 0-128h-725.333334A64 64 0 0 0 85.333333 490.666667z" fill="#5cac7c"></path><path d="M405.333333 853.333333a64 64 0 0 1 0-128h469.333334a64 64 0 0 1 0 128h-469.333334z m256-597.333333a64 64 0 0 1 0-128h213.333334a64 64 0 0 1 0 128h-213.333334z" fill="#5cac7c" opacity=".5"></path>';
+    toggleIcon.style.pointerEvents = 'none'; // 防止图标干扰拖动
     
-    // 设置样式
-    toggleIcon.style.position = 'fixed';
-    toggleIcon.style.top = '300px';
-    toggleIcon.style.right = '15px';
-    toggleIcon.style.zIndex = '1000';
-    toggleIcon.style.cursor = 'grab';
-    toggleIcon.style.touchAction = 'none';
-    
-    document.body.appendChild(toggleIcon);
+    wrapper.appendChild(toggleIcon);
 
     // 添加拖拽功能
-    const dragHandler = makeDraggable(toggleIcon);
+    const dragHandler = makeDraggable(wrapper);
 
     if (hostsRequiringPopup.includes(hostname)) {
         let popupWindow = null;
-        toggleIcon.addEventListener('click', function() {
-            if (!dragHandler.hasMoved()) {
+        wrapper.addEventListener('click', function(e) {
+            if (!dragHandler.isDragging()) {
                 if (popupWindow && !popupWindow.closed) {
                     popupWindow.close();
                     popupWindow = null;
@@ -149,7 +155,6 @@ function createSidebar() {
                     popupWindow = window.open(iframeUrl, '_blank', 'width=500,height=700');
                 }
             }
-            dragHandler.resetMoved();
         });
     } else {
         const iframe = document.createElement('iframe');
@@ -159,11 +164,10 @@ function createSidebar() {
         
         document.body.appendChild(iframe);
         
-        toggleIcon.addEventListener('click', function() {
-            if (!dragHandler.hasMoved()) {
+        wrapper.addEventListener('click', function() {
+            if (!dragHandler.isDragging()) {
                 iframe.style.right = (iframe.style.right === '0px') ? '-400px' : '0px';
             }
-            dragHandler.resetMoved();
         });
     }
 }
