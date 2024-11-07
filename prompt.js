@@ -24,76 +24,93 @@ function isElementExists(id) {
     return document.getElementById(id) !== null;
 }
 
-// 添加拖拽功能
+// 处理拖拽功能
 function makeDraggable(element) {
     let isDragging = false;
-    let currentY;
-    let initialY;
-    let yOffset = 0;
+    let startY = 0;
+    let startOffset = 0;
+    let moved = false;
 
-    element.addEventListener('mousedown', dragStart);
-    document.addEventListener('mousemove', drag);
-    document.addEventListener('mouseup', dragEnd);
+    // 保存位置到本地存储
+    function savePosition(top) {
+        localStorage.setItem('ai-shortcut-position', top);
+    }
 
-    function dragStart(e) {
-        if (e.target === element) {
-            initialY = e.clientY - yOffset;
-            isDragging = true;
+    // 从本地存储加载位置
+    function loadPosition() {
+        const savedTop = localStorage.getItem('ai-shortcut-position');
+        if (savedTop !== null) {
+            element.style.top = savedTop + 'px';
         }
     }
 
-    function drag(e) {
-        if (isDragging) {
-            e.preventDefault();
-            currentY = e.clientY - initialY;
-            yOffset = currentY;
-
-            // 限制在视窗范围内
-            const maxY = window.innerHeight - element.offsetHeight;
-            const boundedY = Math.min(Math.max(currentY, 0), maxY);
-            
-            // 只改变top值，保持right值不变
-            element.style.top = boundedY + 'px';
-            element.style.bottom = 'auto';
-        }
-    }
-
-    function dragEnd() {
-        initialY = currentY;
-        isDragging = false;
-    }
-
-    // 添加触摸支持
-    element.addEventListener('touchstart', (e) => {
-        const touch = e.touches[0];
-        initialY = touch.clientY - yOffset;
+    function onStart(y) {
         isDragging = true;
+        moved = false;
+        startY = y;
+        startOffset = element.offsetTop;
+        element.style.cursor = 'grabbing';
+    }
+
+    function onMove(y) {
+        if (!isDragging) return;
+        moved = true;
+
+        let delta = y - startY;
+        let newTop = startOffset + delta;
+
+        // 限制在视窗范围内
+        const maxY = window.innerHeight - element.offsetHeight;
+        newTop = Math.min(Math.max(0, newTop), maxY);
+
+        element.style.top = newTop + 'px';
+        element.style.bottom = 'auto';
+        
+        // 保存新位置
+        savePosition(newTop);
+    }
+
+    function onEnd() {
+        isDragging = false;
+        element.style.cursor = 'grab';
+    }
+
+    // 鼠标事件
+    element.addEventListener('mousedown', function(e) {
+        onStart(e.clientY);
     });
 
-    document.addEventListener('touchmove', (e) => {
+    document.addEventListener('mousemove', function(e) {
+        onMove(e.clientY);
+    });
+
+    document.addEventListener('mouseup', onEnd);
+
+    // 触摸事件
+    element.addEventListener('touchstart', function(e) {
+        onStart(e.touches[0].clientY);
+    }, { passive: false });
+
+    document.addEventListener('touchmove', function(e) {
         if (isDragging) {
             e.preventDefault();
-            const touch = e.touches[0];
-            currentY = touch.clientY - initialY;
-            yOffset = currentY;
-
-            const maxY = window.innerHeight - element.offsetHeight;
-            const boundedY = Math.min(Math.max(currentY, 0), maxY);
-            
-            element.style.top = boundedY + 'px';
-            element.style.bottom = 'auto';
+            onMove(e.touches[0].clientY);
         }
-    });
+    }, { passive: false });
 
-    document.addEventListener('touchend', () => {
-        initialY = currentY;
-        isDragging = false;
-    });
+    document.addEventListener('touchend', onEnd);
+
+    // 加载保存的位置
+    loadPosition();
+
+    return {
+        hasMoved: () => moved,
+        resetMoved: () => { moved = false; }
+    };
 }
 
 // 创建侧边栏
 function createSidebar() {
-    // 如果已经存在侧边栏，则不重复创建
     if (isElementExists('ai-shortcut-sidebar') || isElementExists('ai-shortcut-toggle')) {
         return;
     }
@@ -108,22 +125,23 @@ function createSidebar() {
     toggleIcon.setAttribute('height', '35');
     toggleIcon.innerHTML = '<path d="M85.333333 490.666667A64 64 0 0 0 149.333333 554.666667h725.333334a64 64 0 0 0 0-128h-725.333334A64 64 0 0 0 85.333333 490.666667z" fill="#5cac7c"></path><path d="M405.333333 853.333333a64 64 0 0 1 0-128h469.333334a64 64 0 0 1 0 128h-469.333334z m256-597.333333a64 64 0 0 1 0-128h213.333334a64 64 0 0 1 0 128h-213.333334z" fill="#5cac7c" opacity=".5"></path>';
     
-    // 设置初始样式
+    // 设置样式
     toggleIcon.style.position = 'fixed';
-    toggleIcon.style.top = '300px'; // 改用 top 而不是 bottom
+    toggleIcon.style.top = '300px';
     toggleIcon.style.right = '15px';
     toggleIcon.style.zIndex = '1000';
-    toggleIcon.style.cursor = 'move'; // 改为移动光标
+    toggleIcon.style.cursor = 'grab';
+    toggleIcon.style.touchAction = 'none';
     
     document.body.appendChild(toggleIcon);
 
     // 添加拖拽功能
-    makeDraggable(toggleIcon);
+    const dragHandler = makeDraggable(toggleIcon);
 
     if (hostsRequiringPopup.includes(hostname)) {
         let popupWindow = null;
         toggleIcon.addEventListener('click', function() {
-            if (!isDragging) { // 只在非拖拽状态处理点击事件
+            if (!dragHandler.hasMoved()) {
                 if (popupWindow && !popupWindow.closed) {
                     popupWindow.close();
                     popupWindow = null;
@@ -131,9 +149,9 @@ function createSidebar() {
                     popupWindow = window.open(iframeUrl, '_blank', 'width=500,height=700');
                 }
             }
+            dragHandler.resetMoved();
         });
     } else {
-        // 创建侧边栏 iframe
         const iframe = document.createElement('iframe');
         iframe.id = 'ai-shortcut-sidebar';
         iframe.style.cssText = 'width:400px;height:100%;position:fixed;right:-400px;top:0;z-index:999;border:none;transition:right 0.3s ease;';
@@ -141,29 +159,26 @@ function createSidebar() {
         
         document.body.appendChild(iframe);
         
-        // 添加点击事件
         toggleIcon.addEventListener('click', function() {
-            if (!isDragging) { // 只在非拖拽状态处理点击事件
+            if (!dragHandler.hasMoved()) {
                 iframe.style.right = (iframe.style.right === '0px') ? '-400px' : '0px';
             }
+            dragHandler.resetMoved();
         });
     }
 }
 
 // 初始化函数
 function initializeSidebar() {
-    // 检查必要的DOM元素是否已加载
     if (document.body) {
         createSidebar();
     } else {
-        // 如果body还没加载，等待DOMContentLoaded事件
         document.addEventListener('DOMContentLoaded', createSidebar);
     }
 }
 
 // 监听路由变化（针对单页应用）
 function listenToRouteChanges() {
-    // 监听 URL 变化
     let lastUrl = location.href;
     new MutationObserver(() => {
         const url = location.href;
@@ -173,7 +188,6 @@ function listenToRouteChanges() {
         }
     }).observe(document, { subtree: true, childList: true });
 
-    // 监听 history 变化
     if (window.history && window.history.pushState) {
         const pushState = history.pushState;
         history.pushState = function() {
@@ -187,15 +201,8 @@ function listenToRouteChanges() {
 
 // 启动初始化
 (function() {
-    // 立即尝试初始化
     initializeSidebar();
-    
-    // 监听页面加载完成事件
     window.addEventListener('load', initializeSidebar);
-    
-    // 启动路由监听
     listenToRouteChanges();
-    
-    // 定期检查（作为后备方案）
     setInterval(initializeSidebar, 2000);
 })();
