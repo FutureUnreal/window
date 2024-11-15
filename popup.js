@@ -89,7 +89,7 @@ function showPopup() {
 
     const content = document.createElement('p');
     content.id = 'popup-content';
-    content.textContent = '请在使用前注意查看网站公告。有任何问题请及时联系客服！！！\n双十一九折优惠码：double11';
+    content.textContent = '请在使用前注意查看网站公告。有任何问题请及时联系客服！！！';
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'button-container';
