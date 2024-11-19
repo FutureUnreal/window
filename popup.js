@@ -47,6 +47,16 @@ function showPopup() {
             text-align: center;
             line-height: 1.4;
         }
+        #popup-content .red-text {
+            color: red;
+        }
+        #popup-content a {
+            color: #007AFF;
+            text-decoration: none;
+        }
+        #popup-content a:hover {
+            text-decoration: underline;
+        }
         .button-container {
             display: flex;
             border-top: 1px solid #e1e1e1;
@@ -87,9 +97,9 @@ function showPopup() {
     const popup = document.createElement('div');
     popup.id = 'popup-box';
 
-    const content = document.createElement('p');
+    const content = document.createElement('div');
     content.id = 'popup-content';
-    content.textContent = '请在使用前注意查看网站公告。有任何问题请及时联系客服！！！官方质保订阅购买地址：www.ispay.top';
+    content.innerHTML = `请在使用前注意查看网站公告。<span class="red-text">有任何问题请及时联系客服！！！</span>官方质保订阅购买地址：<a href="http://www.ispay.top" target="_blank">www.ispay.top</a>`;
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'button-container';
