@@ -89,7 +89,7 @@ function showPopup() {
 
     const content = document.createElement('p');
     content.id = 'popup-content';
-    content.textContent = '请在使用前注意查看网站公告。有任何问题请及时联系客服！！！';
+    content.textContent = '请在使用前注意查看网站公告。有任何问题请及时联系客服！！！官方质保订阅购买地址：www.ispay.top';
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'button-container';
