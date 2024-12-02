@@ -99,7 +99,7 @@ function showPopup() {
 
     const content = document.createElement('div');
     content.id = 'popup-content';
-    content.innerHTML = `请在使用前注意查看网站公告。<span class="red-text">有任何问题请及时联系客服！！！</span>官方质保订阅购买地址：<a href="http://www.ispay.top" target="_blank">www.ispay.top</a>`;
+    content.innerHTML = `请在使用前注意查看网站公告。<span class="red-text">有任何问题请及时联系客服！！！</span>官方质保订阅购买地址：<a href="https://www.ispay.top" target="_blank">www.ispay.top</a><br>各类AI聚合平台：<a href="https://www.ai-unreal.cn/galleries" target="_blank">www.ai-unreal.cn</a>`;
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'button-container';
